@@ -7,17 +7,13 @@ import 'package:flutter/material.dart';
 export 'custom/custom_box.dart';
 export 'combine_animation_controller.dart';
 
-part 'position_calculator.dart';
+part 'util/position_calculator.dart';
 
 part 'animation_test.dart';
 
-part 'anime_transform.dart';
-
-part 'base_transform_record.dart';
-
 part 'animation_box.dart';
 
-part 'animation_trans.dart';
+part 'animation_state_machine.dart';
 
 enum AnimationDuration {
   short(120),
@@ -139,93 +135,4 @@ class AnimationProgress {
       },
     );
   }
-}
-
-class AnimationDrive {
-  final Map<AnimationProgress, Set<AnimeTransform>> _transforms = {};
-
-  AnimationProgress? _point;
-
-  Rect? _start;
-
-  Rect get start => _start ?? Rect.zero;
-
-  AnimationDrive();
-
-  void pointToProgress(AnimationProgress progress) {
-    _point = progress;
-  }
-
-  void addAll(List<AnimeTransform> element) {
-    assert(_point != null, 'Did you call the `pointToProgress`?');
-    if (_point != null) {
-      _transforms[_point!] = {
-        ..._transforms[_point!] ?? [],
-        ...element,
-      };
-    }
-  }
-
-  void add(AnimeTransform element) {
-    assert(_point != null, 'Did you call the `pointToProgress`?');
-    if (_point != null) {
-      _transforms[_point!] = {
-        ..._transforms[_point!] ?? [],
-        element,
-      };
-    }
-  }
-
-  void setStart(Rect start) {
-    _start = start;
-  }
-
-  ///获取某个进度下的变化组合
-  BaseTransformRecord get delta {
-    List<BaseTransformRecord> records = [];
-    for (var key in _transforms.keys) {
-      if (key.progress == 0) {
-        continue;
-      }
-      final transforms = _transforms[key] ?? {};
-      if (transforms.isEmpty) {
-        continue;
-      } else if (transforms.length == 1) {
-        records = [
-          ...records,
-          transforms.first.delta *
-              key.progress.factor(transforms.first.start, transforms.first.end)
-        ];
-      } else {
-        records = [
-          ...records,
-          transforms
-              .map((e) => e.delta * key.progress.factor(e.start, e.end))
-              .reduce((a, b) => a + b)
-        ];
-      }
-    }
-
-    if (records.isEmpty) {
-      return BaseTransformRecord.fromSize(Size.zero);
-    }
-
-    return records.reduce((a, b) => a + b);
-  }
-
-  ///获取drive偏移量变化的集合
-  List<AnimeTransform> get offsets =>
-      _transforms[_point]?.map((e) => e.toOffset).toList() ?? [];
-}
-
-extension AnimationProgressFactor on AnimationProgress {
-  double factor(int from, int to) =>
-      min((to - from), max(0, progress - from)) / (to - from);
-}
-
-extension AnimationDriveDouble on double {
-  double progress(double factor) => this * factor;
-
-  double factor(double from, double to) =>
-      min((to - from), max(0, this - from)) / (to - from);
 }
